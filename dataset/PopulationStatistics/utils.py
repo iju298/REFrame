@@ -2,6 +2,19 @@ import pandas as pd
 import re
 import plotly.express as px
 
+def save_fig_to_html(fig, output_path: str):
+    """
+    Plotly figure 객체를 HTML 파일로 저장합니다.
+
+    Parameters:
+    - fig: Plotly 그래프 객체
+    - output_path (str): 저장할 HTML 파일 경로
+    """
+    if fig is None:
+        print("⚠️ 저장할 fig 객체가 없습니다.")
+        return
+    fig.write_html(output_path)
+    print(f"✅ 그래프가 HTML로 저장되었습니다: {output_path}")
 
 def preprocess_df(df):
     '''
@@ -111,7 +124,7 @@ def get_low_extinction_regions(df, n=None, thresh=None):
     return filtered_df
 
 
-def plot_extinction_trend(filtered_df, title="지방소멸지수 추이"):
+def plot_extinction_trend(filtered_df, title="decline_index_trend", save = True,  path='./plot'):
     """
     지방소멸지수 시계열 추이를 Plotly로 시각화합니다.
     x축은 연도(int형 오름차순), y축은 지방소멸지수,
@@ -142,4 +155,10 @@ def plot_extinction_trend(filtered_df, title="지방소멸지수 추이"):
         legend_title_text="행정구역"
     )
 
-    fig.show()
+    if save:
+        save_fig_to_html(fig, output_path=f'{path}/{title}.html')
+
+
+
+    return fig
+
