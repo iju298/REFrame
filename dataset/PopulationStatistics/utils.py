@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import plotly.express as px
+import plotly.io as pio
 
 def save_fig_to_html(fig, output_path: str):
     """
