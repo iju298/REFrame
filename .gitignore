@@ -1,4 +1,9 @@
 *.pyc
+__pycache__/
 
 # OS-specific files
 .DS_Store
+
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
