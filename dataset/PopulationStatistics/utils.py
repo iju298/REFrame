@@ -80,7 +80,7 @@ def decline_index(df):
     merged['지방소멸지수'] = merged['20~39세_여성'] / merged['65세_이상_전체']
 
     return merged
-    
+'''    
 def get_low_extinction_regions(df, n=None, thresh=None):
   
     year = 2024
@@ -120,6 +120,57 @@ def get_low_extinction_regions(df, n=None, thresh=None):
     filtered_df['연도'] = filtered_df['연도'].astype(str)  # 시각화용 문자열
     filtered_df['연도'] = filtered_df['연도'].astype(str).astype(int)
 
+    filtered_df.reset_index(drop=True, inplace=True)
+    
+    return filtered_df
+'''
+
+def get_low_extinction_regions(df, n=None, thresh=None):
+    year = 2024
+    year_df = df[df['연도'] == year]
+
+    if year_df.empty:
+        raise ValueError(f"{year}년 데이터가 존재하지 않습니다.")
+    if n is not None and thresh is not None:
+        raise ValueError("n과 thresh 중 하나만 지정하세요.")
+    
+    # 2024년 기준 소멸지수 낮은 지역 선택
+    if n is not None:
+        selected_df = year_df.nsmallest(n, '지방소멸지수').copy()
+    elif thresh is not None:
+        selected_df = year_df[year_df['지방소멸지수'] <= thresh].sort_values('지방소멸지수').copy()
+    else:
+        raise ValueError("n 또는 thresh 중 하나는 반드시 지정해야 합니다.")
+    
+    # 지방소멸지수 낮을수록 동일한 값은 동일한 순위 부여
+    selected_df['소멸위험순위'] = selected_df['지방소멸지수'].rank(method='dense', ascending=True).astype(int)
+
+    # 행정구역 정렬 순서 확보 (소멸위험순위 기준 정렬)
+    selected_df = selected_df.sort_values(['소멸위험순위', '행정구역'])
+    selected_regions = selected_df['행정구역'].tolist()
+
+    # 전체 연도 데이터 중 해당 지역만 필터링
+    filtered_df = df[df['행정구역'].isin(selected_regions)].copy()
+
+    # 소멸위험순위 병합
+    filtered_df = filtered_df.merge(
+        selected_df[['행정구역', '소멸위험순위']],
+        on='행정구역',
+        how='left'
+    )
+
+    # 연도 숫자형 → 문자열 및 정렬 가능하게 변환
+    filtered_df['연도'] = filtered_df['연도'].astype(int)
+
+    # 카테고리형으로 행정구역 순서 지정
+    filtered_df['행정구역'] = pd.Categorical(
+        filtered_df['행정구역'],
+        categories=selected_regions,
+        ordered=True
+    )
+
+    # 정렬: 행정구역(소멸지수 낮은 순), 연도(내림차순)
+    filtered_df = filtered_df.sort_values(['행정구역', '연도'], ascending=[True, False])
     filtered_df.reset_index(drop=True, inplace=True)
     
     return filtered_df
