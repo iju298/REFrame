@@ -17,6 +17,25 @@ def save_fig_to_html(fig, output_path: str):
     fig.write_html(output_path)
     print(f"✅ 그래프가 HTML로 저장되었습니다: {output_path}")
 
+
+def merge_by_province_city(df, region_col='행정구역'):
+    df = df.copy()
+
+    def extract_two_levels(region):
+        parts = str(region).split()
+        if len(parts) >= 2:
+            return " ".join(parts[:2])
+        elif len(parts) == 1:
+            return parts[0]
+        else:
+            return None
+
+    df['도시레벨'] = df[region_col].apply(extract_two_levels)
+
+    agg_df = df.groupby('도시레벨').sum(numeric_only=True).reset_index()
+    agg_df.reset_index(drop=True, inplace=True)
+    return agg_df
+
 def preprocess_df(df):
     '''
     원본 데이터 구조 변경 
@@ -25,6 +44,15 @@ def preprocess_df(df):
 
     reshaped_data = []
 
+    df['행정구역'] = df['행정구역'].str.replace(r'\s*\(.*\)', '', regex=True)
+
+
+    # 행정구역 합
+    pattern = r'^(.*도|.*특별시|.*광역시|.*자치시|.*자치도)$'
+    df = df[~(df['행정구역'].str.match(pattern) & ~df['행정구역'].str.contains(r'\s'))]
+    df.reset_index(drop=True, inplace=True)
+
+    ##
     for idx, row in df.iterrows():
         region = row['행정구역']
         for col in columns:
@@ -49,7 +77,7 @@ def preprocess_df(df):
                 })
 
     result_df = pd.DataFrame(reshaped_data)
-
+    
     return result_df
     
 
