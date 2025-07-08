@@ -17,6 +17,26 @@ def save_fig_to_html(fig, output_path: str):
     print(f"✅ 그래프가 HTML로 저장되었습니다: {output_path}")
 
 
+def merge_by_province_city(df, region_col='행정구역'):
+    df = df.copy()
+
+    def extract_two_levels(region):
+        parts = str(region).split()
+        if len(parts) >= 2:
+            return " ".join(parts[:2])
+        elif len(parts) == 1:
+            return parts[0]
+        else:
+            return None
+
+    df['도시레벨'] = df[region_col].apply(extract_two_levels)
+
+    agg_df = df.groupby('도시레벨').sum(numeric_only=True).reset_index()
+    agg_df.reset_index(drop=True, inplace=True)
+    
+    return agg_df
+
+
 def combine_region_names(df, col='행정구역별(시군구)'):
     df = df[~df[col].astype(str).str.strip().str.endswith('부')].copy()
 
