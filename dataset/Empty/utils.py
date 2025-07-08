@@ -18,27 +18,43 @@ def save_fig_to_html(fig, output_path: str):
 
 
 def combine_region_names(df, col='행정구역별(시군구)'):
-    # '부'로 끝나는 행 제거
     df = df[~df[col].astype(str).str.strip().str.endswith('부')].copy()
 
     new_region_col = []
     current_province = ""
+    current_city = ""
 
     for val in df[col]:
         if pd.isna(val):
             new_region_col.append(None)
             continue
 
-        if str(val).endswith(("특별시", "광역시", "특별자치시", "도")):
+        val = str(val).strip()
+
+        # 상위 행정구역 (도, 광역시 등)
+        if val.endswith(("특별시", "광역시", "특별자치시", "자치시", "자치도", "도")):
             current_province = val
+            current_city = ""
             new_region_col.append(val)
+
+        # 시/군 레벨 (중간 단계)
+        elif val.endswith(("시", "군")):
+            current_city = val
+            full_name = f"{current_province} {current_city}"
+            new_region_col.append(full_name)
+
+        # 하위 구/동/면 등
         else:
-            full_name = f"{current_province} {val}"
+            if current_city:
+                full_name = f"{current_province} {current_city} {val}"
+            else:
+                full_name = f"{current_province} {val}"  # 도 다음 군 또는 읍/면 가능
             new_region_col.append(full_name)
 
     df.insert(1, '결합행정구역', new_region_col)
 
     return df
+
 
 
 
